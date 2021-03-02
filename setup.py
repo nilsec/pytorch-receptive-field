@@ -1,11 +1,11 @@
 from setuptools import setup
 
 setup(
-    name='pytorch_receptive_field',
+    name='torch_receptive_field',
     version='0.1',
-    description='Neurotransmitter classification',
+    description='Receptive Field Calculation',
     url='https://github.com/nilsec/pytorch-receptive-field',
     author='Fanghy09',
     packages=[
-        'pytorch_receptive_field',
+        'torch_receptive_field',
         ])
