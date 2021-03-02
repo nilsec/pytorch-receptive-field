@@ -43,15 +43,14 @@ def receptive_field(model, input_size, batch_size=-1, device="cuda"):
                 p_r = receptive_field[p_key]["r"]
                 p_start = receptive_field[p_key]["start"]
                 
+                print(f"{class_name}")
                 if class_name == "Conv2d" or class_name == "MaxPool2d":
                     kernel_size = module.kernel_size
                     stride = module.stride
                     padding = module.padding
-                    dilation = module.dilation
-       
-                    kernel_size, stride, padding, dilation = map(check_same, [kernel_size, stride, padding, dilation])
+                    kernel_size, stride, padding = map(check_same, [kernel_size, stride, padding])
                     receptive_field[m_key]["j"] = p_j * stride
-                    receptive_field[m_key]["r"] = p_r + ((kernel_size - 1) * dilation) * p_j
+                    receptive_field[m_key]["r"] = p_r + (kernel_size - 1) * p_j
                     receptive_field[m_key]["start"] = p_start + ((kernel_size - 1) / 2 - padding) * p_j
                 elif class_name == "BatchNorm2d" or class_name == "ReLU" or class_name == "Bottleneck":
                     receptive_field[m_key]["j"] = p_j
@@ -63,7 +62,7 @@ def receptive_field(model, input_size, batch_size=-1, device="cuda"):
                     receptive_field[m_key]["r"] = 0
                     receptive_field[m_key]["start"] = 0
                 else:
-                    raise ValueError("module not ok")
+                    raise ValueError(f"module {class_name} not ok")
                     pass
             receptive_field[m_key]["input_shape"] = list(input[0].size()) # only one
             receptive_field[m_key]["input_shape"][0] = batch_size
@@ -79,6 +78,9 @@ def receptive_field(model, input_size, batch_size=-1, device="cuda"):
 
         if (
             not isinstance(module, nn.Sequential)
+            and not ("Sequential" == str(module.__class__).split(".")[-1].split("'")[0])
+            and not ("Linear" == str(module.__class__).split(".")[-1].split("'")[0])
+            and not ("Dropout" == str(module.__class__).split(".")[-1].split("'")[0])
             and not isinstance(module, nn.ModuleList)
             and not (module == model)
         ):
@@ -131,8 +133,8 @@ def receptive_field(model, input_size, batch_size=-1, device="cuda"):
     trainable_params = 0
     for layer in receptive_field:
         # input_shape, output_shape, trainable, nb_params
-        assert "start" in receptive_field[layer], layer
-        assert len(receptive_field[layer]["output_shape"]) == 4
+        #assert "start" in receptive_field[layer], layer
+        #assert len(receptive_field[layer]["output_shape"]) == 4
         line_new = "{:7} {:12}  {:>10} {:>10} {:>10} {:>15} ".format(
             "",
             layer,
