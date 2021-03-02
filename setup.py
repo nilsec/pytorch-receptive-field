@@ -1,11 +1,11 @@
 from setuptools import setup
 
 setup(
-    name='torch_receptive_field',
+    name='pytorch_receptive_field',
     version='0.1',
     description='Neurotransmitter classification',
-    url='https://github.com/funkelab/synister',
-    author='Funkelab',
+    url='https://github.com/nilsec/pytorch-receptive-field',
+    author='Fanghy09',
     packages=[
-        'torch_receptive_field',
+        'pytorch_receptive_field',
         ])
