@@ -24,9 +24,15 @@ def receptive_field(model, input_size, batch_size=-1, device="cuda"):
     'start' denotes the center of the receptive field for the first unit (start) in on direction of the feature tensor.
         Convention is to use half a pixel as the center for a range. center for `slice(0,5)` is 2.5.
     '''
-    def register_hook(module):
 
+    module_dict = {}
+    for n,m in model.named_modules():
+        module_dict[m] = n
+
+    def register_hook(module):
+        #nonlocal module_dict
         def hook(module, input, output):
+            #nonlocal module_dict
             class_name = str(module.__class__).split(".")[-1].split("'")[0]
             module_idx = len(receptive_field)
             m_key = "%i" % module_idx
@@ -43,7 +49,6 @@ def receptive_field(model, input_size, batch_size=-1, device="cuda"):
                 p_r = receptive_field[p_key]["r"]
                 p_start = receptive_field[p_key]["start"]
                 
-                print(f"{class_name}")
                 if class_name == "Conv2d" or class_name == "MaxPool2d":
                     kernel_size = module.kernel_size
                     stride = module.stride
@@ -66,6 +71,7 @@ def receptive_field(model, input_size, batch_size=-1, device="cuda"):
                     pass
             receptive_field[m_key]["input_shape"] = list(input[0].size()) # only one
             receptive_field[m_key]["input_shape"][0] = batch_size
+            receptive_field[m_key]["layer_name"] = module_dict[module]
             if isinstance(output, (list, tuple)):
                 # list/tuple
                 receptive_field[m_key]["output_shape"] = [
@@ -112,6 +118,7 @@ def receptive_field(model, input_size, batch_size=-1, device="cuda"):
     receptive_field["0"]["conv_stage"] = True
     receptive_field["0"]["output_shape"] = list(x.size())
     receptive_field["0"]["output_shape"][0] = batch_size
+    receptive_field["0"]["layer_name"] = None
     hooks = []
 
     # register hook
@@ -151,7 +158,7 @@ def receptive_field(model, input_size, batch_size=-1, device="cuda"):
     return receptive_field
 
 
-def receptive_field_for_unit(receptive_field_dict, layer, unit_position):
+def receptive_field_for_unit(receptive_field_dict, layer_name, unit_position):
     """Utility function to calculate the receptive field for a specific unit in a layer
         using the dictionary calculated above
     :parameter
@@ -167,6 +174,14 @@ def receptive_field_for_unit(receptive_field_dict, layer, unit_position):
     Out: [(62.0, 161.0), (62.0, 161.0)]
     """
     input_shape = receptive_field_dict["input_size"]
+
+    # Find layer by name
+    keys = [k for k in receptive_field_dict.keys() if k != "input_size"]
+    for k in keys:
+        if receptive_field_dict[k]["layer_name"] == layer_name:
+            layer = k
+            print(layer_name, layer)
+
     if layer in receptive_field_dict:
         rf_stats = receptive_field_dict[layer]
         assert len(unit_position) == 2
